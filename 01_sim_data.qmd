@@ -1,0 +1,47 @@
+---
+title: "Simulate data"
+author: "Stefano Coretta"
+format: html
+---
+
+## Set-up
+
+```{r}
+#| label: setup
+
+library(tidyverse)
+library(faux)
+
+```
+
+## Simulate
+
+```{r}
+set.seed(9899)
+sim_data <- add_random(subj = 6) |> 
+  add_within("subj", s = c("St", "Un"), v = c("A", "I"), rep = 1:5) |> 
+  add_contrast("s", "treatment", colnames = "s.c") |> 
+  add_contrast("v", "treatment", colnames = "v.c") |> 
+  add_ranef("subj", u0s = 1.5, u1s = 2, w0s = 0.5, w1s = 0.5, y1s = 0.5, .cors = 0.3) |> 
+  add_ranef(sigma = 2.2)
+
+sim_data <- sim_data |> 
+  mutate(
+    dv = 3 + u0s + w0s +
+      (-4 + u1s) * s.c +
+      (6 + w1s) * v.c +  
+      (3 + y1s) * s.c * v.c + 
+      sigma
+  )
+```
+
+```{r}
+sim_data |> 
+  ggplot(aes(v, dv, colour = s)) +
+  geom_jitter(position = position_jitterdodge()) +
+  facet_wrap(vars(subj))
+```
+
+```{r}
+saveRDS(sim_data, "sim_data.rds")
+```

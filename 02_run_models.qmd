@@ -1,0 +1,93 @@
+---
+title: "Run models"
+author: "Stefano Coretta"
+format: html
+---
+
+## Set-up
+
+```{r}
+library(tidyverse)
+library(brms)
+
+sim_data <- readRDS("sim_data.rds")
+
+sim_data <- sim_data |> 
+  mutate(
+    sv = as.factor(paste0(v, ".", s))
+  )
+```
+
+## BM 1 with indexing
+
+```{r}
+bm_1_priors <- get_prior(
+  dv ~ 0 + sv + (0 + sv | subj),
+  data = sim_data
+)
+
+bm_1 <- brm(
+  dv ~ 0 + sv + (0 + sv | subj),
+  data = sim_data,
+  cores = 4,
+  backend = "cmdstanr"
+)
+
+bm_1
+```
+
+```{r}
+conditional_effects(bm_1)
+```
+
+## BM2 with contrasts
+
+```{r}
+bm_2 <- brm(
+  dv ~ s*v + (s*v | subj),
+  data = sim_data,
+  cores = 4,
+  backend = "cmdstanr"
+)
+bm_2
+```
+
+```{r}
+conditional_effects(bm_2, "v:s")
+```
+
+## BM1-NL
+
+```{r}
+bm_1_nl_bf <- bf(
+    dv ~ 0 + a,
+    a ~ 0 + sv + (0 + sv |p| subj),
+    nl = TRUE
+  )
+
+bm_1_nl_priors_default <- get_prior(
+  bm_1_nl_bf,
+  data = sim_data
+)
+
+bm_1_nl_priors <- bm_1_nl_priors_default |> 
+  mutate(
+    prior = ifelse(prior == "" & class == "b" & coef != "", "normal(0, 5)", prior)
+  )
+
+
+bm_1_nl <- brm(
+  bm_1_nl_bf,
+  data = sim_data,
+  prior = bm_1_nl_priors,
+  chains = 1,
+  backend = "cmdstanr"
+)
+
+bm_1_nl
+conditional_effects(bm_1_nl, "sv")
+```
+
+```{r}
+ranef(bm_1_nl)
+```

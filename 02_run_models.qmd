@@ -7,6 +7,8 @@ format: html
 ## Set-up
 
 ```{r}
+#| label: setup
+
 library(tidyverse)
 library(brms)
 
@@ -16,33 +18,124 @@ sim_data <- sim_data |>
   mutate(
     sv = as.factor(paste0(v, ".", s))
   )
+my_seed <- 1911
 ```
 
 ## BM 1 with indexing
 
+### Prior
+
 ```{r}
-bm_1_priors <- get_prior(
-  dv ~ 0 + sv + (0 + sv | subj),
+#| label: bm-1-bf
+
+bm_1_bf <- bf(
+  dv ~ 0 + sv + (0 + sv | subj)
+)
+```
+
+```{r}
+#| label: bm-1-prior
+
+bm_1_priors_default <- get_prior(
+  bm_1_bf,
   data = sim_data
 )
 
+bm_1_priors <- bm_1_priors_default |> 
+  mutate(
+    prior = ifelse(
+      prior == "" & class == "b" & coef != "", "normal(0, 5)", prior
+    )
+  )
+
+bm_1_prior_pp <- brm(
+  bm_1_bf,
+  data = sim_data,
+  prior = bm_1_priors,
+  sample_prior = "only",
+  cores = 4,
+  backend = "cmdstanr",
+  seed = my_seed
+)
+```
+
+```{r}
+#| label: bm-1-prior-cond
+conditional_effects(bm_1_prior_pp)
+```
+
+### Run
+
+```{r}
+#| label: bm-1
+
 bm_1 <- brm(
-  dv ~ 0 + sv + (0 + sv | subj),
+  bm_1_bf,
   data = sim_data,
   cores = 4,
-  backend = "cmdstanr"
+  backend = "cmdstanr",
+  seed = my_seed
 )
+```
 
+```{r}
+#| label: bm-1-sum
 bm_1
 ```
 
 ```{r}
+#| label: bm-1-cond
 conditional_effects(bm_1)
 ```
 
 ## BM2 with contrasts
 
+### Prior
+
 ```{r}
+#| label: bm-2-bf
+
+bm_2_bf <- bf(
+  dv ~ s*v + (s*v | subj)
+)
+```
+
+
+```{r}
+#| label: bm-2-prior
+
+bm_2_priors_default <- get_prior(
+  bm_2_bf,
+  data = sim_data
+)
+
+bm_2_priors <- bm_2_priors_default |> 
+  mutate(
+    prior = ifelse(
+      prior == "" & class == "b" & coef != "", "normal(0, 5)", prior
+    )
+  )
+
+bm_2_prior_pp <- brm(
+  dv ~ s*v + (s*v | subj),
+  data = sim_data,
+  prior = bm_2_priors,
+  sample_prior = "only",
+  cores = 4,
+  backend = "cmdstanr",
+  seed = my_seed
+)
+```
+
+```{r}
+#| label: bm-2-prior-cond
+conditional_effects(bm_2_prior_pp, "v:s")
+```
+
+### Run
+
+```{r}
+#| label: bm-2
 bm_2 <- brm(
   dv ~ s*v + (s*v | subj),
   data = sim_data,
@@ -53,6 +146,7 @@ bm_2
 ```
 
 ```{r}
+#| label: bm-2-cond
 conditional_effects(bm_2, "v:s")
 ```
 

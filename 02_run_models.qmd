@@ -88,6 +88,69 @@ bm_1
 conditional_effects(bm_1)
 ```
 
+## BM1a with indexing
+
+```{r}
+#| label: bm-1a-bf
+
+bm_1a_bf <- bf(
+  dv ~ 0 + s:v + (0 + s:v | subj)
+)
+```
+
+```{r}
+#| label: bm-1a-prior
+
+bm_1a_priors_default <- get_prior(
+  bm_1a_bf,
+  data = sim_data
+)
+
+bm_1a_priors <- bm_1a_priors_default |> 
+  mutate(
+    prior = ifelse(
+      prior == "" & class == "b" & coef != "", "normal(0, 5)", prior
+    )
+  )
+
+bm_1a_prior_pp <- brm(
+  bm_1a_bf,
+  data = sim_data,
+  prior = bm_1a_priors,
+  sample_prior = "only",
+  cores = 4,
+  backend = "cmdstanr",
+  seed = my_seed
+)
+```
+
+```{r}
+#| label: bm-1a-prior-cond
+conditional_effects(bm_1a_prior_pp)
+```
+
+```{r}
+#| label: bm-1a
+
+bm_1a <- brm(
+  bm_1a_bf,
+  data = sim_data,
+  cores = 4,
+  backend = "cmdstanr",
+  seed = my_seed
+)
+```
+
+```{r}
+#| label: bm-1a-sum
+bm_1a
+```
+
+```{r}
+#| label: bm-1a-cond
+conditional_effects(bm_1a, "v:s")
+```
+
 ## BM2 with contrasts
 
 ### Prior
@@ -99,7 +162,6 @@ bm_2_bf <- bf(
   dv ~ s*v + (s*v | subj)
 )
 ```
-
 
 ```{r}
 #| label: bm-2-prior

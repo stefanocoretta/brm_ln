@@ -23,6 +23,8 @@ my_seed <- 1911
 
 ## BM 1 with indexing
 
+This is not the appropriate way of doing this. See BM1a.
+
 ### Prior
 
 ```{r}
@@ -217,7 +219,7 @@ conditional_effects(bm_2, "v:s")
 ```{r}
 bm_1_nl_bf <- bf(
     dv ~ 0 + a,
-    a ~ 0 + sv + (0 + sv |p| subj),
+    a ~ 0 + s:v + (0 + s:v |p| subj),
     nl = TRUE
   )
 
